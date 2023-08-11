@@ -2,56 +2,26 @@
 provider "aws" {
     region = "eu-west-3"
 }
-variable "cidr_block_FreemanAWSTest" {
-  description = "Create cidr block for aws_vpc of FreemanAWSTest"
-}
 
-variable "cidr_block_FreemanAWSTest-subnet-1" {
-  description = "Create cidr block for FreemanAWSTest-subnet-1"
-  
-}
-variable "cidr_block_FreemanAWSTest-subnet-2" {
-  description = "Create cidr block for FreemanAWSTest-subnet-2"
-  
-}
-# Create aws vpc and IP range
-resource "aws_vpc" "FreemanAWSTest" {
-  cidr_block = var.cidr_block_FreemanAWSTest
+
+# Setup variable for all required resources
+variable vpc_cidr_blocks {}
+variable subnet_cidr_blocks {}
+variable availz_zone {}
+variable env_prefix {}
+
+resource "aws_vpc" "FreemanTerraformLearn" {
+  cidr_block = var.vpc_cidr_blocks
   tags = {
-    Name: "FreemanAWSTest-Dev"
-    vpc_env:"Dev"
+    Name: "${var.env_prefix}-vpc"
   }
 }
 
-# Create subnet 1
-resource "aws_subnet" "FreemanAWSTest-subnet-1" {
-  vpc_id = aws_vpc.FreemanAWSTest.id
-  cidr_block = var.cidr_block_FreemanAWSTest-subnet-1
-  availability_zone = "eu-west-3a"
+resource "aws_subnet" "FreemanSubnet-1" {
+  vpc_id = aws_vpc.FreemanTerraformLearn.id
+  cidr_block = var.subnet_cidr_blocks
+  availability_zone = var.availz_zone
   tags = {
-    Name: "FreemanAWSTest-subnet-1"
+    Name: "${var.env_prefix}-subnet-1"
   }
-}
-
-# Data query from existed IP address range
-
-
-# Create subnet 2
-resource "aws_subnet" "FreemanAWSTest-subnet-2" {
-  vpc_id = aws_vpc.FreemanAWSTest.id
-  cidr_block = var.cidr_block_FreemanAWSTest-subnet-2
-  availability_zone = "eu-west-3a"
-  tags = {
-    Name: "FreemanAWSTest-subnet-2"
-  }
-}
-
-output "dev-vpc-id" {
-  value = aws_vpc.FreemanAWSTest.id
-}
-output "aws_subnet-id-1" {
-  value = aws_subnet.FreemanAWSTest-subnet-1
-}
-output "aws_subnet-id-2" {
-  value = aws_subnet.FreemanAWSTest-subnet-2
 }
