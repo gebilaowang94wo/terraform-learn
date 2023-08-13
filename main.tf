@@ -25,3 +25,21 @@ resource "aws_subnet" "FreemanSubnet-1" {
     Name: "${var.env_prefix}-subnet-1"
   }
 }
+
+resource "aws_route_table" "FreemanTerraformRouteTable" {
+  vpc_id = aws_vpc.FreemanTerraformLearn.id
+  route {
+    cidr_block = "0.0.0.0/0"
+    gateway_id = aws_internet_gateway.FreemanTerraformInternetGateway.id
+  }
+  tags = {
+    Name : "${var.env_prefix}-route_table"
+  }
+}
+
+resource "aws_internet_gateway" "FreemanTerraformInternetGateway" {
+  vpc_id = aws_vpc.FreemanTerraformLearn.id
+  tags = {
+    Name = "${var.env_prefix}-Internet-Gateway"
+  }
+}
