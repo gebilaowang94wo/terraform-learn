@@ -9,6 +9,7 @@ variable vpc_cidr_blocks {}
 variable subnet_cidr_blocks {}
 variable availz_zone {}
 variable env_prefix {}
+variable ip_address{}
 
 resource "aws_vpc" "FreemanTerraformLearn" {
   cidr_block = var.vpc_cidr_blocks
@@ -41,5 +42,34 @@ resource "aws_internet_gateway" "FreemanTerraformInternetGateway" {
   vpc_id = aws_vpc.FreemanTerraformLearn.id
   tags = {
     Name = "${var.env_prefix}-Internet-Gateway"
+  }
+}
+
+resource "aws_security_group" "FreemanTerraformSecurityGroup" {
+  vpc_id = aws_vpc.FreemanTerraformLearn.id
+  name = "FreemanTerraformSecurityGroup"
+
+  ingress  {
+    from_port = 22
+    to_port = 22
+    protocol = "tcp"
+    cidr_blocks = [var.ip_address]
+  } 
+
+  ingress  {
+    from_port = 0
+    to_port = 0
+    protocol = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+  
+  egress  {
+    from_port = 0
+    to_port = 0
+    protocol = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+  tags = {
+    Name = "${var.env_prefix}-Security-Group"
   }
 }
