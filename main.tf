@@ -16,6 +16,8 @@ variable env_prefix {}
 variable ip_address{}
 # Define Instance types such as 
 variable "instance_type" {}
+# Define Public key location
+variable "public_key_location" {}
 
 
 # Create a genaral vpc by different environment such as dev
@@ -116,6 +118,11 @@ output "aws_ami_id" {
   value = data.aws_ami.latest-amazon-linux-image.id
 }
 
+resource "aws_key_pair" "ssh-key" {
+  key_name = "server-key"
+  public_key = "${file(var.public_key_location)}"
+}
+
 # Create instance 
 resource "aws_instance" "FreemanTerraformInstance" {
   ami = data.aws_ami.latest-amazon-linux-image.id
@@ -127,8 +134,12 @@ resource "aws_instance" "FreemanTerraformInstance" {
   associate_public_ip_address = true
 
   # Important part : Keys!! must be create a key pair in EC2 view page
-  key_name = "server-key-pair"
+  key_name = aws_key_pair.ssh-key.key_name
   tags = {
     Name = "${var.env_prefix}-server"
   }
+
+  #Create Docker image and start it.
+  user_data = file("entry-script.sh")
+
 }
