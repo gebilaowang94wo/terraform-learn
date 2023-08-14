@@ -18,6 +18,8 @@ variable ip_address{}
 variable "instance_type" {}
 # Define Public key location
 variable "public_key_location" {}
+# Define Private key locateion
+variable "private_key_location" {}
 
 
 # Create a genaral vpc by different environment such as dev
@@ -70,21 +72,21 @@ resource "aws_security_group" "FreemanTerraformSecurityGroup" {
     from_port = 22
     to_port = 22
     protocol = "tcp"
-    cidr_blocks = [var.ip_address]
+    cidr_blocks = ["0.0.0.0/0"]
   } 
 
-  ingress  {
-    /* from_port and to_port are a range of IP addresses */
-    from_port = 0
-    to_port = 0
+  /* ingress  {
+    /* from_port and to_port are a range of IP addresses 
+    from_port = 1024
+    to_port = 65535
     protocol = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
+    cidr_blocks = ["116.3.243.1/32"]
+  } */
 
   # engress for out of international network communications. normally, no limitations of ipaddress
   egress  {
     from_port = 0
-    to_port = 0
+    to_port = 65535
     protocol = "tcp"
     cidr_blocks = ["0.0.0.0/0"]
   }
@@ -140,6 +142,23 @@ resource "aws_instance" "FreemanTerraformInstance" {
   }
 
   #Create Docker image and start it.
-  user_data = file("entry-script.sh")
+
+  #user_data = file("entry-script.sh")
+
+  connection {
+    type = "ssh"
+    host = self.public_ip
+    user = "ec2-user"
+    private_key = "${file(var.private_key_location)}"
+  }
+  provisioner "remote-exec" {
+    inline = [
+      "#!/bin/bash",
+      "sudo yum update -y && sudo yum install -y docker",
+      "sudo systemctl start docker",
+      "sudo usermod -aG docker ec2-user",
+      "sudo docker run -p 8080:80 nginx"
+    ]
+  }
 
 }
