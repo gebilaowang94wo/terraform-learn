@@ -3,25 +3,6 @@ provider "aws" {
     region = "eu-west-3"
 }
 
-
-# Setup variable for all required resources
-variable vpc_cidr_blocks {}
-# Define subnet's cidr blocks
-variable subnet_cidr_blocks {}
-# Define availability zones
-variable availz_zone {}
-# Define environments such as dev uat prod
-variable env_prefix {}
-# Define IP address range
-variable ip_address{}
-# Define Instance types such as 
-variable "instance_type" {}
-# Define Public key location
-variable "public_key_location" {}
-# Define Private key locateion
-variable "private_key_location" {}
-
-
 # Create a genaral vpc by different environment such as dev
 resource "aws_vpc" "FreemanTerraformLearn" {
   cidr_block = var.vpc_cidr_blocks
@@ -30,37 +11,17 @@ resource "aws_vpc" "FreemanTerraformLearn" {
   }
 }
 
-
-# Create a subnet by different environment such as dev-subnet-1
-resource "aws_subnet" "FreemanSubnet-1" {
+module "FreemanSubnet-1" {
+  source = "./modules/subnet"
+  subnet_cidr_block = var.subnet_cidr_block
+  avail_zone = var.avail_zone
+  env_prefix = var.env_prefix
   vpc_id = aws_vpc.FreemanTerraformLearn.id
-  cidr_block = var.subnet_cidr_blocks
-  availability_zone = var.availz_zone
-  tags = {
-    Name: "${var.env_prefix}-subnet-1"
-  }
+  default_route_table_id = aws_vpc.FreemanTerraformLearn.default_route_table_id
 }
 
 
-# Create a route table by different environment such as dev-route-table
-resource "aws_route_table" "FreemanTerraformRouteTable" {
-  vpc_id = aws_vpc.FreemanTerraformLearn.id
-  route {
-    cidr_block = "0.0.0.0/0"
-    gateway_id = aws_internet_gateway.FreemanTerraformInternetGateway.id
-  }
-  tags = {
-    Name : "${var.env_prefix}-route_table"
-  }
-}
 
-# Create a gateway by different environment such as dev-Internet-Gateway
-resource "aws_internet_gateway" "FreemanTerraformInternetGateway" {
-  vpc_id = aws_vpc.FreemanTerraformLearn.id
-  tags = {
-    Name = "${var.env_prefix}-Internet-Gateway"
-  }
-}
 
 # Create a security group by different environment such as dev-Security-Group
 resource "aws_security_group" "FreemanTerraformSecurityGroup" {
@@ -75,13 +36,6 @@ resource "aws_security_group" "FreemanTerraformSecurityGroup" {
     cidr_blocks = ["0.0.0.0/0"]
   } 
 
-  /* ingress  {
-    /* from_port and to_port are a range of IP addresses 
-    from_port = 1024
-    to_port = 65535
-    protocol = "tcp"
-    cidr_blocks = ["116.3.243.1/32"]
-  } */
 
   # engress for out of international network communications. normally, no limitations of ipaddress
   egress  {
@@ -116,9 +70,7 @@ data "aws_ami" "latest-amazon-linux-image"{
    }
 }
 
-output "aws_ami_id" {
-  value = data.aws_ami.latest-amazon-linux-image.id
-}
+
 
 resource "aws_key_pair" "ssh-key" {
   key_name = "server-key"
@@ -130,9 +82,9 @@ resource "aws_instance" "FreemanTerraformInstance" {
   ami = data.aws_ami.latest-amazon-linux-image.id
   instance_type = var.instance_type
   /* Below options are optional due to aws will be used default vpc and others*/
-  subnet_id = aws_subnet.FreemanSubnet-1.id
+  subnet_id = module.FreemanSubnet-1.subnet.id
   vpc_security_group_ids = [aws_security_group.FreemanTerraformSecurityGroup.id]
-  availability_zone = var.availz_zone
+  availability_zone = var.avail_zone
   associate_public_ip_address = true
 
   # Important part : Keys!! must be create a key pair in EC2 view page
@@ -151,14 +103,14 @@ resource "aws_instance" "FreemanTerraformInstance" {
     user = "ec2-user"
     private_key = "${file(var.private_key_location)}"
   }
-  provisioner "remote-exec" {
+  /* provisioner "remote-exec" {
     inline = [
-      "#!/bin/bash",
-      "sudo yum update -y && sudo yum install -y docker",
-      "sudo systemctl start docker",
-      "sudo usermod -aG docker ec2-user",
-      "sudo docker run -p 8080:80 nginx"
+      # "#!/bin/bash",
+      # "sudo yum update -y && sudo yum install -y docker",
+      # "sudo systemctl start docker",
+      # "sudo usermod -aG docker ec2-user",
+      # "sudo docker run -p 8080:80 nginx"
     ]
-  }
+  } */
 
 }
